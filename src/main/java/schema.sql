@@ -1,4 +1,4 @@
-CREATE DATABASE hospitals IF NOT EXIST;
+CREATE DATABASE hospital IF NOT EXIST;
 USE hospital;
 
 CREATE TABLE chats (
