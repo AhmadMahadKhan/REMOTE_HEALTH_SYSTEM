@@ -8,6 +8,7 @@ module com.structure.remote_health_system {
     requires java.naming;
     requires itext;
     requires org.jfree.jfreechart;
+    requires mysql.connector.j;
 
     opens com.structure.Logins to javafx.fxml;
     opens com.structure.project to javafx.fxml;

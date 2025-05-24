@@ -1,6 +1,7 @@
 package com.structure.ChatVedioConsultation;
 
-import com.structure.DataAccessObject.DatabaseResources;
+
+import com.structure.DataBase.DBUtil;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -11,16 +12,12 @@ public class ChatServer {
 
 
 
-    private static final String url = "jdbc:mysql://localhost:3306/hospital";
-    private static final String userRoot = "root";
-    private static final String password = "WJ28@krhps";
-
     public static  void addMessage(ChatClient chatClient){
 
-        DatabaseResources.loadDriver();
+
 
         String query ="INSERT INTO chats(sender , receiver , message ) VALUES(?,?,?)";
-        try(Connection connection = DriverManager.getConnection(url,userRoot,password);
+        try(Connection connection = DBUtil.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(query)){
 
 
@@ -39,10 +36,10 @@ e.printStackTrace();
         }
     }
     public static  List<ChatClient> getMessages(String sender,String receiver) throws SQLException {
-        DatabaseResources.loadDriver();
+
         List<ChatClient> chat = new ArrayList<>();
         String query ="Select * FROM chats WHERE sender = ? and receiver = ? ORDER BY timestamp DESC";
-        try(Connection connection = DriverManager.getConnection(url,userRoot,password);
+        try(Connection connection = DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)){
             preparedStatement.setString(1,sender);
             preparedStatement.setString(2,receiver);

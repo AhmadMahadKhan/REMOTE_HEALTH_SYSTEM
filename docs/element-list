@@ -2,6 +2,7 @@ module:com.structure.remote_health_system
 com.structure.AppointmentScheduling
 com.structure.ChatVedioConsultation
 com.structure.DataAccessObject
+com.structure.DataBase
 com.structure.DoctorPatientInteraction
 com.structure.EmailSender
 com.structure.EmergencyAlertSystem

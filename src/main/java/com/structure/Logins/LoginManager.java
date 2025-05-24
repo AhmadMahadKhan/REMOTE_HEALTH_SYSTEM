@@ -1,5 +1,6 @@
 package com.structure.Logins;
 
+import com.structure.DataBase.DBUtil;
 import com.structure.Model.Administrator;
 import com.structure.Model.Doctor;
 import com.structure.Model.Patient;
@@ -8,30 +9,17 @@ import java.sql.*;
 
 public class LoginManager {
 
-    private static final String url = "jdbc:mysql://localhost:3306/hospital";
-    private static final String userRoot = "root";
-    private static final String password = "WJ28@krhps";
 
-    //loading the jdbc drivers
-    public static void loadDriver() {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("Driver loaded successfully.");
-        } catch (ClassNotFoundException e) {
-            System.out.println("Driver loading failed.");
-            e.printStackTrace();
-        }
-    }
 
     //a method to store password of the user if not set
     //checking and validating the credidentials and then storing the password
     public static void setPassword(String userEmail, String id, String newPassword) throws SQLException {
         System.out.println("Setting password for " + userEmail + " in all tables.");
-        loadDriver();
+
 
         String[] tables = {"patients", "doctors", "admin"};
 
-        try (Connection connection = DriverManager.getConnection(url, userRoot, password)) {
+        try (Connection connection = DBUtil.getConnection()) {
             for (String table : tables) {
                 //retriving the data from the tables
                 String query = "SELECT password FROM " + table + " WHERE email = ? AND id = ?";
@@ -62,10 +50,10 @@ public class LoginManager {
 
     //used in sign-up page
     public static boolean passwordValidation(String userEmail, String id) throws SQLException {
-        loadDriver();
 
 
-        try (Connection connection = DriverManager.getConnection(url, userRoot, password)) {
+
+        try (Connection connection =DBUtil.getConnection()) {
             ResultSet resultSet;
 
             // If user is attempting to register (password not set yet)
@@ -128,9 +116,9 @@ public class LoginManager {
     //if not present then return null
      public static Object checkUser(String userEmail,String id ,  String pass) throws SQLException {
 
-        loadDriver();
+
          String query ;
-         try (Connection connection = DriverManager.getConnection(url, userRoot, password)) {
+         try (Connection connection =DBUtil.getConnection()) {
              ResultSet resultSet;
              //checking the user enter data in patient table
              query = "SELECT * FROM patients WHERE email = ? AND id = ? AND password = ?";

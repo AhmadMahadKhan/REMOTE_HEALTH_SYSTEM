@@ -1,6 +1,7 @@
 package com.structure.DoctorPatientInteraction;
 
-import com.structure.DataAccessObject.DatabaseResources;
+
+import com.structure.DataBase.DBUtil;
 import com.structure.Model.Patient;
 
 import java.sql.*;
@@ -10,16 +11,14 @@ import java.util.List;
 
 public class MedicalHistory {
 
-    private static final String url = "jdbc:mysql://localhost:3306/hospital";
-    static final String userRoot = "root";
-    private static final String password = "WJ28@krhps";
+
 
     public static void addFeedback(Feedback feedback) throws SQLException {
-        DatabaseResources.loadDriver();
+
 
         String query = "INSERT INTO feedback(doctorId , patientID ,feedback)" +
                 " Values( ?, ?, ? )";
-        try(Connection connection = DriverManager.getConnection(url,userRoot,password);
+        try(Connection connection = DBUtil.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(query)){
 
             preparedStatement.setString(1,feedback.getDoctorId());
@@ -34,11 +33,11 @@ public class MedicalHistory {
     }
 
     public static void addPrescription(Prescription prescription) throws SQLException {
-        DatabaseResources.loadDriver();
+
 
         String query = "INSERT INTO prescription(doctorId , patientID ,medicine , dosage , schedule)" +
                 " Values( ?, ?, ?, ?, ? )";
-        try(Connection connection = DriverManager.getConnection(url,userRoot,password);
+        try(Connection connection = DBUtil.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(query)){
 
             preparedStatement.setString(1,prescription.getDoctorId());
@@ -56,10 +55,10 @@ public class MedicalHistory {
 
     }
     public static List<Prescription> viewPrescriptions(Patient patient) throws SQLException {
-        DatabaseResources.loadDriver();
+
 
         String query = "Select * FROM  prescription  WHERE patientId = ? ";
-        try (Connection connection = DriverManager.getConnection(url, userRoot, password);
+        try (Connection connection = DBUtil.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, patient.getId());
@@ -116,7 +115,7 @@ public static List<String> getDistinctDoctorIds(Patient patient) throws SQLExcep
     List<String> doctorIds = new ArrayList<>();
     String query = "SELECT DISTINCT doctorId FROM feedback WHERE patientId = ?";
 
-    try (Connection connection = DriverManager.getConnection(url, userRoot, password);
+    try (Connection connection = DBUtil.getConnection();
          PreparedStatement statement = connection.prepareStatement(query)) {
         statement.setString(1, patient.getId());
         ResultSet resultSet = statement.executeQuery();
@@ -131,7 +130,7 @@ public static List<String> getDistinctDoctorIds(Patient patient) throws SQLExcep
         List<Feedback> feedbacks = new ArrayList<>();
         String query = "SELECT * FROM feedback WHERE patientId = ? AND doctorId = ?";
 
-        try (Connection connection = DriverManager.getConnection(url, userRoot, password);
+        try (Connection connection =DBUtil.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, patient.getId());
             statement.setString(2, doctorId);

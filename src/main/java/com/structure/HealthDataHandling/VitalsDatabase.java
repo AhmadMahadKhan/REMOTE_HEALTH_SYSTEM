@@ -1,5 +1,6 @@
 package com.structure.HealthDataHandling;
 
+import com.structure.DataBase.DBUtil;
 import com.structure.Model.Patient;
 
 import java.sql.*;
@@ -9,28 +10,15 @@ import java.util.List;
 
 public class VitalsDatabase {
 
-    private static final String url = "jdbc:mysql://localhost:3306/hospital";
-    private static final String userRoot = "root";
-    private static final String password = "WJ28@krhps";
 
-    //loading jdbc drivers
-    public static void loadDriver() {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("Driver loaded successfully.");
-        } catch (ClassNotFoundException e) {
-            System.out.println("Driver loading failed.");
-            e.printStackTrace();
-        }
-    }
 
     public static void saveVitalSign(VitalSign vital) {
-        loadDriver();
+
         String query = "INSERT INTO vitalSigns (patient_id, heart_rate, temperature, systolic, diastolic, oxygen_level) VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = DriverManager.getConnection(url, userRoot, password);
+        try (Connection connection = DBUtil.getConnection();
 
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+       PreparedStatement preparedStatement = connection.prepareStatement(query)) {
             preparedStatement.setString(1, vital.getPatientId());
             preparedStatement.setInt(2, vital.getHeartRate());
             preparedStatement.setDouble(3, vital.getTemp());
@@ -47,14 +35,14 @@ public class VitalsDatabase {
 
     public static VitalSign getVitals(Patient patient) {
 
-        loadDriver();
+
         VitalSign vitalSign = null ;
 
         System.out.println("data base checking");
         String query = "SELECT * FROM vitalsigns WHERE patient_id = ? ORDER BY id DESC LIMIT 1;";
 
         System.out.println("entering try block");
-        try(Connection connection = DriverManager.getConnection(url , userRoot, password);
+        try (Connection connection =DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)){
             preparedStatement.setString(1, patient.getId().trim());
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -79,9 +67,9 @@ public class VitalsDatabase {
 
     public static String getPatientsVital(String patientId){
 
-        loadDriver();
+
         String query = "SELECT * FROM vitalsigns WHERE patient_id = ? ORDER BY recorded_at DESC LIMIT 1";
-        try(Connection connection = DriverManager.getConnection(url ,userRoot , password);
+        try (Connection connection =DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query )){
 
             preparedStatement.setString(1,patientId);
@@ -107,12 +95,12 @@ public class VitalsDatabase {
     }
 
     public static List<String> getPatientsForPDF() throws SQLException {
-        loadDriver();
+
         List<String> patientIds = new ArrayList<>();
 
         String query= "SELECT DISTINCT patient_id FROM vitalsigns";
         String id;
-        try(Connection connection = DriverManager.getConnection(url, userRoot, password);
+        try (Connection connection =DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)){
             preparedStatement.executeQuery();
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -126,7 +114,7 @@ public class VitalsDatabase {
         return patientIds;
     }
     public static List<VitalSign> getVitalsForPDF(String patientID){
-        loadDriver();
+
         List<VitalSign> vitalSigns = new ArrayList<>();
         String id ;
         int oxygenLevel;
@@ -138,7 +126,7 @@ public class VitalsDatabase {
         VitalSign vitalSign = null;
 
         String query ="SELECT * FROM vitalsigns WHERE patient_id = ? ";
-        try(Connection connection = DriverManager.getConnection(url,userRoot,password);
+        try (Connection connection =DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)){
             preparedStatement.setString(1,patientID);
 

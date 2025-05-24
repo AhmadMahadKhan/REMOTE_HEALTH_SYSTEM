@@ -1,5 +1,6 @@
 package com.structure.AppointmentScheduling;
 
+import com.structure.DataBase.DBUtil;
 import com.structure.Exception.ForeignKeyViolationException;
 import com.structure.Model.Doctor;
 import com.structure.Model.Patient;
@@ -11,25 +12,14 @@ import java.util.List;
 
 public class AppointmentManager {
 
-    private static final String url = "jdbc:mysql://localhost:3306/hospital";
-    private static final String userRoot = "root";
-    private static final String password = "WJ28@krhps";
 
-    public static void loadDriver() {
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("Driver loaded successfully.");
-        } catch (ClassNotFoundException e) {
-            System.out.println("Driver loading failed.");
-            e.printStackTrace();
-        }
-    }
+
     //for patient
     public static void addAppointment(Appointment appointment) throws SQLException , ForeignKeyViolationException {
-        loadDriver();
+
 
         String query = "INSERT INTO appointments (patient_id, doctor_id, appointment_date ,appointment_time,id ) VALUES (?,  ?, ?, ?,?)";
-        try(Connection connection = DriverManager.getConnection(url , userRoot, password);
+        try(Connection connection = DBUtil.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(query)){
 
             //used local date in appointment class now converting that to sql date and time for storage
@@ -58,10 +48,10 @@ public class AppointmentManager {
     public static List<Appointment> viewAppointments(String patientId) throws SQLException {
 
         System.out.println("inside view appointments method in appointment manager class");
-        loadDriver();
+
         List<Appointment> appointments = new ArrayList<>();
         String query = "SELECT * FROM appointments WHERE patient_id = ? ORDER BY id ";
-        try(Connection connection = DriverManager.getConnection(url , userRoot, password);
+        try(Connection connection = DBUtil.getConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(query)){
             preparedStatement.setString(1, patientId);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -87,10 +77,10 @@ public class AppointmentManager {
     //doctor can check all the appointmens related to him
     //all pending rejected and confirmed
     public static List<Appointment> viewAppointmentsDoctor(Doctor doctor){
-        loadDriver();
+
         String query = "SELECT * FROM appointments WHERE doctor_id = ? ";
 //        String query = "SELECT * FROM appointments WHERE doctor_id = ? ORDER BY appointment_date DESC, appointment_time DESC";
-        try(Connection connection = DriverManager.getConnection(url , userRoot , password);
+        try(Connection connection = DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, doctor.getId());
@@ -121,8 +111,8 @@ public class AppointmentManager {
     public static boolean updateDecision(Appointment appointment ,String decision ) throws SQLException {
 
         String query = "UPDATE appointments SET status = ? WHERE patient_id = ? AND doctor_id = ? AND appointment_date = ? AND appointment_time = ?";
-        loadDriver();
-        try(Connection connection = DriverManager.getConnection(url ,userRoot , password);
+
+        try(Connection connection = DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)){
 
             preparedStatement.setString(1, decision);
@@ -144,7 +134,7 @@ public class AppointmentManager {
 
 
     public static List<Patient> getPatientData(Doctor doctor) throws SQLException {
-        loadDriver();
+
 
         String query = "SELECT DISTINCT  p.id AS patient_id, " +
                 " p.Name AS patient_name, " +
@@ -153,8 +143,8 @@ public class AppointmentManager {
                 "JOIN patients p ON a.patient_id = p.id " +
                 "WHERE a.doctor_id = ?";
         List<Patient> patients = new ArrayList<>();
-        try(Connection connection = DriverManager.getConnection(url , userRoot , password);
-        PreparedStatement preparedStatement = connection.prepareStatement(query)){
+        try(Connection connection = DBUtil.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(query)){
             preparedStatement.setString(1, doctor.getId());
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
@@ -175,12 +165,12 @@ public class AppointmentManager {
 
 
     public static List<String> getEmergencyEmails(String patientId) throws SQLException {
-        loadDriver();
+
         String query = "SELECT DISTINCT d.email " +
                 "FROM appointments a " +
                 "JOIN doctors d ON a.doctor_id = d.id " +
                 "WHERE a.patient_id = ?";
-        try (Connection connection = DriverManager.getConnection(url, userRoot, password);
+        try (Connection connection = DBUtil.getConnection();
         PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, patientId);
