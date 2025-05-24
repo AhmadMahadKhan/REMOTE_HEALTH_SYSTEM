@@ -12,6 +12,7 @@ import com.structure.EmergencyAlertSystem.EmergencyAlert;
 import com.structure.EmergencyAlertSystem.PanicButton;
 import com.structure.Exception.ForeignKeyViolationException;
 import com.structure.Exception.NoAppointmentException;
+import com.structure.Exception.UserNotFoundException;
 import com.structure.HealthDataHandling.VitalSign;
 import com.structure.HealthDataHandling.VitalsDatabase;
 import com.structure.Model.Doctor;
@@ -31,10 +32,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import javafx.scene.web.WebEngine;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -46,14 +48,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class PatientController  implements Initializable {
 
+    private static int appointmentIdNumber =0 ;
     private Patient patient;
-
 
     public PatientController() {
     }
@@ -62,9 +65,7 @@ public class PatientController  implements Initializable {
     }
 
 
-
     public void panicButton(ActionEvent e){
-
         PanicButton.panicButton(patient);
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Success");
@@ -73,20 +74,14 @@ public class PatientController  implements Initializable {
         alert.showAndWait();
     }
 
-    @FXML private WebView vedioCall;
-
     @FXML private BorderPane chatBox;
 
+    @FXML private WebView vedioCall;
     private WebEngine engine;
-
-    @Override
-    public void initialize(URL url, ResourceBundle arg1) {
+    @Override public void initialize(URL url, ResourceBundle arg1) {
 
         engine = vedioCall.getEngine();
         loadPage();
-
-
-
         doctorId.setCellValueFactory(new PropertyValueFactory<>("id"));
         doctorName.setCellValueFactory(new PropertyValueFactory<>("name"));
         specialization.setCellValueFactory(new PropertyValueFactory<>("specialization"));
@@ -94,7 +89,6 @@ public class PatientController  implements Initializable {
 
 
     }
-
     public void loadPage() {
         engine.load("https://us05web.zoom.us/myhome");
     }
@@ -102,25 +96,17 @@ public class PatientController  implements Initializable {
 
     //functionalities of adding an appointment
     @FXML private TextField doctorIdLabel;
-    @FXML private TextField appointmentIdLabel;
+    //    @FXML private TextField appointmentIdLabel;
     @FXML private TextField timeField;
     @FXML private DatePicker dateField;
-    @FXML private Pane addAppointmentPane;
-    @FXML StackPane addAppointmentStackPane;
-
-    @FXML
-    public void bookAppointmentPane(ActionEvent e) throws SQLException {
+    @FXML private StackPane addAppointmentStackPane;
+    @FXML public void bookAppointmentPane(ActionEvent e) throws SQLException {
         clearPage(e);
-//        addAppointmentPane.setVisible(true);
         addAppointmentStackPane.setVisible(true);
-
     }
+    @FXML public void bookAppointmentButton() throws SQLException, ForeignKeyViolationException {
 
-    @FXML
-    public void bookAppointmentButton() throws SQLException, ForeignKeyViolationException {
-
-
-        // Check if the time field is empty before parsing
+        // Check if the time field is empty
         String timeInput = timeField.getText().trim();
         if (timeInput.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -128,7 +114,7 @@ public class PatientController  implements Initializable {
             alert.setHeaderText("Empty Fields");
             alert.setContentText("Please enter a valid time.");
             alert.showAndWait();
-            return;  // Stop further execution if time is empty
+            return;
         }
 
         LocalTime time;
@@ -153,6 +139,22 @@ public class PatientController  implements Initializable {
             alert.showAndWait();
             return;  // Stop further execution if date is empty
         }
+        if (date.isBefore(LocalDate.now())) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Invalid Date");
+            alert.setHeaderText("Past Date Selected");
+            alert.setContentText("Please select a date that is today or in the future.");
+            alert.showAndWait();
+            return;
+        }
+        if (date.equals(LocalDate.now()) && time.isBefore(LocalTime.now())) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Invalid Time");
+            alert.setHeaderText("Past Time Selected");
+            alert.setContentText("Please select a time that is later than the current time.");
+            alert.showAndWait();
+            return;
+        }
 
         String doctorId = doctorIdLabel.getText().trim();
         if (doctorId.isEmpty()) {
@@ -163,15 +165,8 @@ public class PatientController  implements Initializable {
             alert.showAndWait();
             return;  // Stop further execution if doctorId is empty
         }
-        int appointmentId = Integer.parseInt(appointmentIdLabel.getText().trim());
-        if (appointmentIdLabel.getText().trim().isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Empty Fields");
-            alert.setContentText("Please enter a appointment ID.");
-            alert.showAndWait();
-            return;  // Stop further execution if appointmentId is empty
-        }
+        int appointmentId = appointmentIdNumber;
+
 
         // Clear the page and show the appointment pane
 
@@ -182,6 +177,7 @@ public class PatientController  implements Initializable {
         ReminderService.sendAppointmentReminders(patient.getEmail() ,"Appoinment","Appointment succesfully send" +
                 "The details of the appointment are:\n" +
                 appointment.detail());
+        ReminderService.sendAppointmentReminders( DAOAdministrator.getEmail(doctorId),"Appointment","A new appointmnet has been scheduled\n"+appointment.detail());
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Success");
         alert.setHeaderText("Appointment Booked");
@@ -189,6 +185,7 @@ public class PatientController  implements Initializable {
         alert.showAndWait();
 
     }
+
 
     @FXML private TableView<Appointment> viewAppointmentTable;
     @FXML private TableColumn<Appointment, String> doctorIdColumn;
@@ -203,6 +200,7 @@ public class PatientController  implements Initializable {
 
         List<Appointment> appointments = AppointmentManager.viewAppointments(patient.getId());
         System.out.println("in controller the size of appointments is " + appointments.size());
+
         ObservableList<Appointment> doctorObservableList = FXCollections.observableArrayList(AppointmentManager.viewAppointments(patient.getId()));
         viewAppointmentTable.setItems(doctorObservableList);
         doctorIdColumn.setCellValueFactory(new PropertyValueFactory<>("doctorId"));
@@ -213,18 +211,13 @@ public class PatientController  implements Initializable {
 
     }
 
-    @FXML
-    private TableView<Doctor> allDoctors;
-    @FXML
-    private TableColumn<Doctor, String> specialization;
-    @FXML
-    private TableColumn<Doctor, String> doctorId;
-    @FXML
-    private TableColumn<Doctor, String> doctorName;
-
-    @FXML
-    public void viewDoctors(ActionEvent e) {
+    @FXML private TableView<Doctor> allDoctors;
+    @FXML private TableColumn<Doctor, String> specialization;
+    @FXML private TableColumn<Doctor, String> doctorId;
+    @FXML private TableColumn<Doctor, String> doctorName;
+    @FXML public void viewDoctors(ActionEvent e) {
         clearPage(e);
+        patientDetails.setVisible(false);
         allDoctors.setVisible(true);
 
         List<Doctor> doctors = DAOAdministrator.viewAllDoctors();
@@ -238,6 +231,7 @@ public class PatientController  implements Initializable {
 
     @FXML
     public void vitalUploadFile(ActionEvent e) {
+        patientDetails.setVisible(false);
         clearPage(e);
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open CSV File");
@@ -247,7 +241,7 @@ public class PatientController  implements Initializable {
 
         System.out.println("reading csv");
         File selectedFile = fileChooser.showOpenDialog(vedioCall.getScene().getWindow());
-        //    readCsvFile(selectedFile,patient);
+        readCsvFile(selectedFile,patient);
         System.out.println("reading csv done");
         if (selectedFile != null) {
             if (patient != null) { // <-- Make sure this is your current selected patient
@@ -257,7 +251,6 @@ public class PatientController  implements Initializable {
             }
         }
     }
-
     private void readCsvFile(File file, Patient patient) {
 
         setPatient(patient);
@@ -278,8 +271,17 @@ public class PatientController  implements Initializable {
                 }
 
                 try {
-                    VitalSign vital = new VitalSign();
 
+                    VitalSign vital = new VitalSign();
+                    vital.setHeartRate(Integer.parseInt(values[0]));
+                    vital.setTemp(Double.parseDouble(values[1]));
+                    vital.setSystolicPressure(Integer.parseInt(values[2]));
+                    vital.setDiastolicPressure(Integer.parseInt(values[3]));
+                    vital.setOxygenLevel(Integer.parseInt(values[4]));
+                    vital.setPatientId(patient.getId());
+
+
+                    VitalsDatabase.saveVitalSign(vital);
                     //if there is something abnormal then the alert is thrown
                     //within it if the patient has no appointment booked then the whole doctors gets the email
                     if(EmergencyAlert.alert(patient,vital)){
@@ -292,8 +294,7 @@ public class PatientController  implements Initializable {
                         return;
                     }
 
-                    // Save to DB (implement saveVitalSign in your VitalsDatabase class)
-                    VitalsDatabase.saveVitalSign(vital);
+
 
                 }catch (NoAppointmentException e){
                     Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -312,14 +313,11 @@ public class PatientController  implements Initializable {
                 }
             }
 
-            // showAlert(Alert.AlertType.INFORMATION, "Upload Complete", "Vitals uploaded for patient: " + patient.getName());
-
         } catch (IOException ex) {
             ex.printStackTrace();
             showAlert(Alert.AlertType.ERROR, "File Error", "Could not read the file.");
         }
     }
-
     private void showAlert(Alert.AlertType alertType, String title, String message) {
         Alert alert = new Alert(alertType);
         alert.setTitle(title);
@@ -335,10 +333,10 @@ public class PatientController  implements Initializable {
     @FXML private Label systolicPressure;
     @FXML private Label diastolicPressure;
     @FXML private StackPane vitalPane;
-    @FXML
-    public void viewVital(ActionEvent e) {
+    @FXML public void viewVital(ActionEvent e) {
 
         clearPage(e);
+        patientDetails.setVisible(false);
         vitalPane.setVisible(true);
 
         if (patient == null) {
@@ -363,31 +361,29 @@ public class PatientController  implements Initializable {
     }
 
 
-    @FXML
-    public void vedioCallButton(ActionEvent e) {
+    @FXML public void vedioCallButton(ActionEvent e) {
 
         clearPage(e);
+        patientDetails.setVisible(false);
         vedioCall.setVisible(true);
+
         loadPage();
     }
 
 
-    @FXML
-    private SplitPane prescriptionPane;
-    @FXML
-    private ListView<Prescription> doctorIdListView;
-    @FXML
-    private TextArea prescriptionTextArea;
-    @FXML
-    public void viewPrescription(ActionEvent e) throws SQLException {
+    @FXML private SplitPane prescriptionPane;
+    @FXML private ListView<Prescription> doctorIdListView;
+    @FXML private TextArea prescriptionTextArea;
+    @FXML public void viewPrescription(ActionEvent e) throws SQLException {
 
         clearPage(e);
         prescriptionPane.setVisible(true);
+        patientDetails.setVisible(false);
         List<Prescription> prescriptions;
         prescriptions = MedicalHistory.viewPrescriptions(patient);
         ObservableList<Prescription> prescriptionObservableList = FXCollections.observableArrayList(prescriptions);
-       doctorIdListView.setItems(prescriptionObservableList);
-       doctorIdListView.cellFactoryProperty();
+        doctorIdListView.setItems(prescriptionObservableList);
+        doctorIdListView.cellFactoryProperty();
         doctorIdListView.setCellFactory(listView -> new ListCell<>() {
             @Override
             protected void updateItem(Prescription prescription, boolean empty) {
@@ -408,61 +404,54 @@ public class PatientController  implements Initializable {
 
     }
 
-    @FXML
-    private SplitPane  feedbackPane ;
-    @FXML
-    private ListView<String> DoctorListView ;
-    @FXML
-    private TextArea feedbackTextArea ;
+    @FXML private SplitPane  feedbackPane ;
+    @FXML private ListView<String> DoctorListView ;
+    @FXML private TextArea feedbackTextArea ;
+    @FXML public void viewFeedback(ActionEvent e) throws SQLException {
 
+        clearPage(e);
+        patientDetails.setVisible(false);
+        feedbackPane.setVisible(true);
+        feedbackTextArea.clear();
 
-    @FXML
-    public void viewFeedback(ActionEvent e) throws SQLException {
-    clearPage(e);
-    feedbackPane.setVisible(true);
-    feedbackTextArea.clear();
+        List<String> doctorIds = MedicalHistory.getDistinctDoctorIds(patient);
+        ObservableList<String> doctorObservableList = FXCollections.observableArrayList(doctorIds);
+        DoctorListView.setItems(doctorObservableList);
 
-    List<String> doctorIds = MedicalHistory.getDistinctDoctorIds(patient);
-    ObservableList<String> doctorObservableList = FXCollections.observableArrayList(doctorIds);
-    DoctorListView.setItems(doctorObservableList);
-
-    DoctorListView.setCellFactory(list -> new ListCell<>() {
-        @Override
-        protected void updateItem(String doctorId, boolean empty) {
-            super.updateItem(doctorId, empty);
-            setText(empty || doctorId == null ? null : "Doctor: " + doctorId);
-        }
-    });
-
-    DoctorListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, selectedDoctorId) -> {
-        if (selectedDoctorId != null) {
-            try {
-                List<Feedback> feedbacks = MedicalHistory.getFeedbacksByDoctor(patient, selectedDoctorId);
-                StringBuilder builder = new StringBuilder();
-                for (Feedback f : feedbacks) {
-                    builder.append("Dated: ").append(f.getDateIssued())
-                            .append("\nFeedback: ").append(f.getFeedback())
-                            .append("\n\n");
-                }
-                feedbackTextArea.setText(builder.toString());
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+        DoctorListView.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(String doctorId, boolean empty) {
+                super.updateItem(doctorId, empty);
+                setText(empty || doctorId == null ? null : "Doctor: " + doctorId);
             }
-        }
-    });
+        });
+
+        DoctorListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, selectedDoctorId) -> {
+            if (selectedDoctorId != null) {
+                try {
+                    List<Feedback> feedbacks = MedicalHistory.getFeedbacksByDoctor(patient, selectedDoctorId);
+                    StringBuilder builder = new StringBuilder();
+                    for (Feedback f : feedbacks) {
+                        builder.append("Dated: ").append(f.getDateIssued())
+                                .append("\nFeedback: ").append(f.getFeedback())
+                                .append("\n\n");
+                    }
+                    feedbackTextArea.setText(builder.toString());
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
     }
 
-    @FXML
-    private ListView<Doctor> senderListView;
-    @FXML
-    private TextArea messageTextArea;
-    @FXML
-    private TextField messageTextField;
 
-    @FXML
-    public void chatBoxButton(ActionEvent e) {
+    @FXML private ListView<Doctor> senderListView;
+    @FXML private TextArea messageTextArea;
+    @FXML private TextField messageTextField;
+    @FXML public void chatBoxButton(ActionEvent e) {
         clearPage(e);
         chatBox.setVisible(true);
+        patientDetails.setVisible(false);
 
         // Load all doctors
         List<Doctor> doctors = DAOAdministrator.viewAllDoctors();
@@ -491,9 +480,8 @@ public class PatientController  implements Initializable {
                     // Format and display messages
                     StringBuilder history = new StringBuilder();
                     for (ChatClient msg : chatHistory) {
-                        String sender = msg.getSender().equals(patient.getId()) ? "You " : "Dr. " + selectedDoctor.getName();
-                        history.append(sender).append(msg.getMessage()).append("\n")
-                                .append(" [").append(msg.getTime()).append("]: ");
+                        String sender = msg.getSender().equals(patient.getId()) ? "You ->" : "Dr. ->" + selectedDoctor.getName();
+                        history.append(sender).append(msg.getMessage()).append("\n");
 
                     }
 
@@ -531,11 +519,11 @@ public class PatientController  implements Initializable {
         ChatServer.addMessage(chatClient);
 
         // Append message to the text area
-        String formattedMessage = "You [" + now + "]: " + message + "\n";
+//        String formattedMessage = "You [" + now + "]: " + message + "\n";
+        String formattedMessage = "You -> " + message + "\n";
         messageTextArea.appendText(formattedMessage);
         messageTextField.clear();
     }
-
     private void showAlert(String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -543,7 +531,6 @@ public class PatientController  implements Initializable {
         alert.setContentText(content);
         alert.showAndWait();
     }
-
     public void clearPage(ActionEvent e) {
 
 
@@ -555,7 +542,20 @@ public class PatientController  implements Initializable {
         vedioCall.setVisible(false);
         feedbackPane.setVisible(false);
         vitalPane.setVisible(false);
+        patientDetails.setVisible(false);
+    }
+    @FXML  public void clearPage1(ActionEvent e) {
 
+
+        allDoctors.setVisible(false);
+        viewAppointmentTable.setVisible(false);
+        prescriptionPane.setVisible(false);
+        chatBox.setVisible(false);
+        addAppointmentStackPane.setVisible(false);
+        vedioCall.setVisible(false);
+        feedbackPane.setVisible(false);
+        vitalPane.setVisible(false);
+        patientDetails.setVisible(true);
     }
 
     private Scene scene;
@@ -581,6 +581,22 @@ public class PatientController  implements Initializable {
             // User clicked Cancel
             System.out.println("Logout canceled by the user.");
         }
+
+    }
+
+
+    @FXML private  StackPane patientDetails;
+    @FXML TextField address;
+    @FXML TextField userId;
+    @FXML TextField userName;
+    @FXML TextField userEmail;
+
+    @FXML public void patientDetailsButton(){
+        address.setText(patient.getAddress());
+        userId.setText(String.valueOf(patient.getId()));
+        userName.setText(String.valueOf(patient.getName()));
+        userEmail.setText(String.valueOf(patient.getEmail()));
+        patientDetails.setVisible(true);
 
     }
 }

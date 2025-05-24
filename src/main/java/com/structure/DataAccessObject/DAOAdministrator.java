@@ -114,7 +114,28 @@ public class DAOAdministrator {
     }
 
 
+    public static String getEmail(String id ){
 
+        String query ="SELECT email FROM patients WHERE id = ?" +
+                "UNION  SELECT email FROM doctors WHERE id = ?";
+        try (Connection connection =DBUtil.getConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+
+            preparedStatement.setString(1,id);
+            preparedStatement.setString(2,id);
+            preparedStatement.executeQuery();
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getString("email");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Database operation failed: " + e.getMessage());
+
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
 
         // For viewing all patients
         public static List<Patient> viewAllPatients() {
