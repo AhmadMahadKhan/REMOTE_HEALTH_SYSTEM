@@ -74,7 +74,7 @@ final String password = "your-app-password";         // Your Gmail App Password
 4. Navigate to the main class:
 5. Run the `SignIn.java` class to start the application.
  - **File path:** `src/main/java/com/structure/Logins/SignIn.java`
-
+6. Most imp step download all the code from the option which appear when you will click on the github link and open it in the intellij idea
 ---
 
 

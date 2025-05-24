@@ -10,7 +10,7 @@ public class EmailSender {
 
     //a static method to send email
     public static void sendEmail(String to, String subject, String messageText) {
-        final String fromEmail = "niazimahad05@gmail.com";  // Your Gmail
+        final String fromEmail = "";  // Your Gmail
         final String password = "";       // Gmail App Password
 
         // Create properties
